@@ -1,0 +1,275 @@
+/* ==========================================================================
+   THE UNFOLD
+   The one moment this app is remembered by, so it gets its own file.
+
+   Four phases, driven by data-phase on .unfold:
+     star     the folded star, floating, just released from the jar
+     flatten  the five points press down into a flat pentagon
+     unroll   the pentagon unwinds to the right, paying out the paper strip
+     open     the memory is readable; photos rise above it
+
+   Closing runs the same phases backwards.
+   ========================================================================== */
+
+.unfold-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-5);
+  background: rgba(7, 14, 36, 0.45);
+  animation: scrim-in var(--t-ease) ease;
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.unfold {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-5);
+  width: 100%;
+  max-width: 760px;
+}
+
+/* X, pinned to the top-right of the screen. */
+.unfold__close {
+  position: fixed;
+  top: calc(var(--sp-4) + env(safe-area-inset-top));
+  right: var(--sp-4);
+  z-index: 32;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  color: var(--paper);
+  backdrop-filter: blur(8px);
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* --- Photos and videos, floating above the paper -------------------------- */
+
+.unfold__media {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity var(--t-unfold-settle) var(--ease-paper),
+    transform var(--t-unfold-settle) var(--ease-paper);
+}
+
+.unfold[data-phase='open'] .unfold__media {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.unfold__photo {
+  width: clamp(110px, 26vw, 190px);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--paper-shade);
+  /* Polaroid-ish border, tilted a touch so they feel handled. */
+  border: 6px solid var(--paper);
+  box-shadow: var(--shadow-lift);
+  transform: rotate(var(--tilt, -2deg));
+}
+
+/* --- The paper strip ------------------------------------------------------ */
+
+.unfold__paper-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 140px;
+}
+
+/* The folded star itself, shown before and during flattening. */
+.unfold__star {
+  position: absolute;
+  width: clamp(74px, 18vw, 104px);
+  height: clamp(74px, 18vw, 104px);
+  transform-origin: center;
+  transition: transform var(--t-unfold-flatten) var(--ease-paper),
+    opacity var(--t-unfold-flatten) ease;
+  filter: drop-shadow(0 8px 16px rgba(7, 14, 36, 0.55));
+}
+
+.unfold[data-phase='star'] .unfold__star {
+  transform: scale(1) rotate(0deg);
+  opacity: 1;
+  animation: star-hover 2.4s ease-in-out infinite;
+}
+
+@keyframes star-hover {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -8px;
+  }
+}
+
+/* The points press down: squashed, un-puffed, rotated to a pentagon rest. */
+.unfold[data-phase='flatten'] .unfold__star {
+  transform: scale(0.92, 0.62) rotate(-18deg);
+  opacity: 1;
+}
+
+.unfold[data-phase='unroll'] .unfold__star,
+.unfold[data-phase='open'] .unfold__star {
+  transform: scale(0.34, 0.2) rotate(-42deg);
+  opacity: 0;
+}
+
+/* The strip. It grows from the star's footprint out to full width, paying
+   out from the left, the way the paper actually leaves the knot. */
+.unfold__strip {
+  position: relative;
+  width: 8%;
+  max-width: 700px;
+  min-height: clamp(76px, 15vw, 104px);
+  padding: var(--sp-4) var(--sp-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  background: var(--paper);
+  border-radius: 3px;
+  box-shadow: var(--shadow-lift);
+  opacity: 0;
+  overflow: hidden;
+  transform: rotate(-1.2deg);
+  transition: width var(--t-unfold-unroll) var(--ease-paper),
+    opacity var(--t-quick) ease;
+}
+
+.unfold[data-phase='unroll'] .unfold__strip,
+.unfold[data-phase='open'] .unfold__strip {
+  width: 100%;
+  opacity: 1;
+}
+
+/* Creases left behind by the folds — strong while unrolling, then relaxing
+   the way real paper does once it's been flattened out. */
+.unfold__creases {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    100deg,
+    transparent 0 46px,
+    var(--paper-shade) 46px 47px,
+    transparent 47px 94px
+  );
+  opacity: 0.9;
+  transition: opacity var(--t-unfold-unroll) ease;
+}
+
+.unfold[data-phase='open'] .unfold__creases {
+  opacity: 0.28;
+}
+
+/* A soft curl at the paying-out edge. */
+.unfold__strip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  background: linear-gradient(
+    270deg,
+    rgba(58, 44, 28, 0.14),
+    rgba(58, 44, 28, 0)
+  );
+  pointer-events: none;
+}
+
+.unfold__text {
+  position: relative;
+  font-family: var(--font-hand);
+  font-size: var(--size-hand);
+  line-height: 1.35;
+  color: var(--ink);
+  white-space: pre-wrap;
+  opacity: 0;
+  transition: opacity var(--t-unfold-settle) ease
+    calc(var(--t-unfold-unroll) * 0.5);
+}
+
+.unfold__date {
+  position: relative;
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: var(--size-small);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-align: right;
+  opacity: 0;
+  transition: opacity var(--t-unfold-settle) ease
+    calc(var(--t-unfold-unroll) * 0.6);
+}
+
+/* When there's no text, the date takes the middle of the paper instead. */
+.unfold__strip--date-only {
+  justify-content: center;
+}
+
+.unfold__strip--date-only .unfold__date {
+  font-size: var(--size-body);
+  text-align: center;
+}
+
+.unfold[data-phase='open'] .unfold__text,
+.unfold[data-phase='open'] .unfold__date {
+  opacity: 1;
+}
+
+/* --- Footer actions under the paper --------------------------------------- */
+
+.unfold__actions {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--t-unfold-settle) ease;
+}
+
+.unfold[data-phase='open'] .unfold__actions {
+  opacity: 1;
+}
+
+.unfold__from {
+  font-family: var(--font-display);
+  font-size: var(--size-small);
+  color: var(--sky-star-dim);
+}
+
+@media (max-width: 480px) {
+  .unfold__strip {
+    padding: var(--sp-3) var(--sp-4);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
+  }
+  .unfold__date {
+    text-align: left;
+  }
+}

@@ -1,0 +1,430 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--sky-ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- App shell ----------------------------------------------------------- */
+
+.app {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.app__stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  transition: filter var(--t-ease) ease, transform var(--t-ease) ease;
+}
+
+/* When a memory is open, everything behind it steps back. */
+.app__stage--behind {
+  filter: blur(14px) brightness(0.65);
+  transform: scale(1.03);
+  pointer-events: none;
+}
+
+/* --- Type helpers -------------------------------------------------------- */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.05;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--size-small);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sky-star-dim);
+}
+
+/* --- Buttons ------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 600;
+  transition: transform var(--t-quick) var(--ease-snap),
+    box-shadow var(--t-quick) ease;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: var(--shadow-soft);
+}
+
+.btn--ghost {
+  background: var(--glass);
+  color: var(--paper);
+  border: 1px solid var(--glass-edge);
+  backdrop-filter: blur(8px);
+}
+
+.btn--gold {
+  background: var(--gold);
+  color: var(--accent-ink);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- Top bar ------------------------------------------------------------- */
+
+.topbar {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4) var(--sp-2);
+}
+
+.topbar__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--size-title);
+  color: var(--paper);
+  margin: 0;
+}
+
+.topbar__sub {
+  margin: 0;
+  font-size: var(--size-small);
+  color: var(--sky-star-dim);
+}
+
+/* The shooting-star inbox button, top right. */
+.inbox-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-pill);
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  color: var(--sky-star-dim);
+  backdrop-filter: blur(8px);
+  transition: color var(--t-ease) ease, box-shadow var(--t-ease) ease;
+}
+
+.inbox-btn--lit {
+  color: var(--gold);
+  box-shadow: var(--glow-gold);
+  animation: inbox-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes inbox-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(255, 212, 107, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 26px rgba(255, 212, 107, 0.95);
+  }
+}
+
+.inbox-btn__count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* --- Bottom dock --------------------------------------------------------- */
+
+.dock {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4)
+    calc(var(--sp-5) + env(safe-area-inset-bottom));
+  flex-wrap: wrap;
+}
+
+/* --- Sheets (compose, send, friend jars) --------------------------------- */
+
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--overlay-scrim);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet {
+  width: min(560px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--card);
+  color: var(--ink);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--sp-5) var(--sp-5)
+    calc(var(--sp-5) + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-lift);
+  animation: sheet-in var(--t-ease) var(--ease-paper);
+}
+
+@media (min-width: 720px) {
+  .sheet-scrim {
+    align-items: center;
+  }
+  .sheet {
+    border-radius: var(--radius-lg);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+}
+
+.sheet__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--size-title);
+  margin: 0 0 var(--sp-1);
+}
+
+.sheet__hint {
+  margin: 0 0 var(--sp-4);
+  color: var(--ink-soft);
+  font-size: var(--size-small);
+}
+
+.field {
+  display: block;
+  margin-bottom: var(--sp-4);
+}
+
+.field__label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--size-small);
+  margin-bottom: var(--sp-2);
+}
+
+.field__input,
+.field__textarea {
+  width: 100%;
+  padding: var(--sp-3);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-hand);
+  font-size: var(--size-hand);
+}
+
+.field__input {
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+}
+
+.field__textarea {
+  min-height: 130px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.swatches {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  border: 3px solid transparent;
+  transition: transform var(--t-quick) var(--ease-snap);
+}
+
+.swatch--on {
+  border-color: var(--ink);
+  transform: scale(1.12);
+}
+
+.thumbs {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-2);
+}
+
+.thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--paper-shade);
+}
+
+.thumb img,
+.thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb__remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.sheet__actions {
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: flex-end;
+  margin-top: var(--sp-5);
+}
+
+/* --- Friend / jar list --------------------------------------------------- */
+
+.jar-list {
+  display: grid;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  border: 1px solid var(--card-edge);
+  text-align: left;
+}
+
+.jar-row__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.jar-row__meta {
+  font-size: var(--size-small);
+  color: var(--ink-soft);
+}
+
+.jar-row__spacer {
+  flex: 1;
+}
+
+/* --- Toast --------------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--sp-7) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 500;
+  box-shadow: var(--shadow-lift);
+  animation: sheet-in var(--t-ease) var(--ease-paper);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

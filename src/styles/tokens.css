@@ -1,0 +1,116 @@
+/* ==========================================================================
+   DESIGN SYSTEM
+   Everything visual in the app reads from this file. Change a value here and
+   it propagates everywhere. Nothing else should hard-code a colour or a size.
+
+   Values that JavaScript also needs (physics sizes, animation timings) are
+   mirrored in src/design/tokens.js — if you change one, change the other.
+   ========================================================================== */
+
+:root {
+  /* --- Colour: the night ------------------------------------------------ */
+  --sky-ink: #070e24; /* deepest sky, top of screen */
+  --sky-deep: #0b1739; /* main sky body */
+  --sky-mid: #16255c; /* horizon glow */
+  --sky-haze: #2b3c7a; /* milky-way wash */
+  --sky-star: #ffffff; /* pinprick stars */
+  --sky-star-dim: #b9c6f0;
+
+  /* --- Colour: warmth --------------------------------------------------- */
+  --gold: #ffd46b; /* shooting stars, notification glow */
+  --gold-deep: #e8a72e;
+  --paper: #fdf6e7; /* unfolded memory paper */
+  --paper-shade: #efe2c8; /* crease shadows on paper */
+  --ink: #3a2c1c; /* handwriting + text on paper */
+  --ink-soft: #8a7a63;
+
+  /* --- Colour: the glass ------------------------------------------------ */
+  --glass: rgba(226, 240, 255, 0.16);
+  --glass-edge: rgba(226, 240, 255, 0.42);
+  --glass-shine: rgba(255, 255, 255, 0.55);
+  --lid: #c8cdd6;
+  --lid-dark: #8e959f;
+
+  /* --- Colour: the stars -----------------------------------------------
+     Add or remove entries freely, then update --star-palette-count and the
+     STAR_COLORS array in src/design/tokens.js to match. */
+  --star-pink: #ff8fb1;
+  --star-coral: #ff9a76;
+  --star-butter: #ffd75e;
+  --star-lime: #b6e36a;
+  --star-mint: #7fd8c0;
+  --star-sky: #7ec5f5;
+  --star-lilac: #c4a7f2;
+
+  /* --- Colour: UI surfaces ---------------------------------------------- */
+  --card: #fffdf7;
+  --card-edge: rgba(58, 44, 28, 0.12);
+  --accent: #ff6f9c; /* primary action */
+  --accent-ink: #2a1220;
+  --overlay-scrim: rgba(7, 14, 36, 0.62);
+
+  /* --- Type ------------------------------------------------------------- */
+  --font-display: 'Fredoka', system-ui, sans-serif; /* chunky voice */
+  --font-body: 'Fraunces', Georgia, serif; /* classic counterweight */
+  --font-hand: 'Caveat', 'Bradley Hand', cursive; /* memory text */
+
+  --size-hero: clamp(2.2rem, 7vw, 3.6rem);
+  --size-title: clamp(1.4rem, 4vw, 2rem);
+  --size-body: 1rem;
+  --size-small: 0.8125rem;
+  --size-hand: clamp(1.15rem, 3.4vw, 1.5rem);
+
+  --tracking-display: -0.02em;
+  --leading-body: 1.55;
+
+  /* --- Space & shape ---------------------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 10px 30px rgba(7, 14, 36, 0.35);
+  --shadow-lift: 0 18px 50px rgba(7, 14, 36, 0.5);
+  --glow-gold: 0 0 18px rgba(255, 212, 107, 0.75);
+
+  /* --- The jar ----------------------------------------------------------
+     Jar size on screen. The physics walls are derived from these in
+     src/design/tokens.js (JAR_GEOMETRY). */
+  --jar-width: min(74vw, 350px);
+  --jar-aspect: 0.68; /* width / height */
+
+  /* --- Stars in the jar -------------------------------------------------- */
+  --star-size: 56px; /* rendered size of one folded star */
+  --star-size-mobile: 46px;
+
+  /* --- Motion -----------------------------------------------------------
+     The unfold is the signature moment; these four numbers control its feel. */
+  --t-quick: 180ms;
+  --t-ease: 320ms;
+  --t-unfold-flatten: 420ms; /* puffy star presses down to a flat pentagon */
+  --t-unfold-unroll: 760ms; /* pentagon unwinds into the paper strip */
+  --t-unfold-settle: 300ms; /* text and photos arrive */
+  --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --shooting-star-duration: 2600ms; /* one streak across the sky */
+}
+
+/* Respect people who'd rather things held still. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-quick: 0ms;
+    --t-ease: 0ms;
+    --t-unfold-flatten: 0ms;
+    --t-unfold-unroll: 0ms;
+    --t-unfold-settle: 0ms;
+  }
+}

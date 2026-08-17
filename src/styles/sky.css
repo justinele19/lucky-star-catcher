@@ -1,0 +1,122 @@
+/* The sky sits behind everything: a gradient, a milky-way wash, pinprick
+   stars, and one streak per unopened star waiting in the inbox. */
+
+.sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: radial-gradient(
+      120% 80% at 50% 108%,
+      var(--sky-mid) 0%,
+      transparent 62%
+    ),
+    linear-gradient(180deg, var(--sky-ink) 0%, var(--sky-deep) 58%, #0e1c46 100%);
+}
+
+/* A soft diagonal band standing in for the milky way. */
+.sky__milkyway {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(
+    58% 26% at 40% 55%,
+    rgba(43, 60, 122, 0.55) 0%,
+    rgba(43, 60, 122, 0.22) 45%,
+    transparent 72%
+  );
+  transform: rotate(-24deg);
+  filter: blur(18px);
+}
+
+.sky__stars {
+  position: absolute;
+  inset: 0;
+}
+
+.sky__star {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--sky-star);
+  animation: twinkle var(--twinkle-dur, 4s) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: var(--twinkle-min, 0.25);
+  }
+  50% {
+    opacity: var(--twinkle-max, 0.9);
+  }
+}
+
+/* --- Shooting stars ------------------------------------------------------
+   One per unopened star from a friend. They travel behind the jar. */
+
+.shooting-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.shooting-star {
+  position: absolute;
+  top: var(--start-y, 12%);
+  left: -14%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 10px 2px rgba(255, 212, 107, 0.9);
+  transform: rotate(var(--angle, 18deg));
+  transform-origin: center;
+  animation: shoot var(--shooting-star-duration) linear infinite;
+  animation-delay: var(--delay, 0s);
+  opacity: 0;
+}
+
+/* The tail. */
+.shooting-star::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  width: var(--tail, 170px);
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    270deg,
+    rgba(255, 212, 107, 0.95),
+    rgba(255, 212, 107, 0)
+  );
+  border-radius: 2px;
+}
+
+@keyframes shoot {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--angle, 18deg)) translateX(0);
+  }
+  8% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--angle, 18deg)) translateX(var(--travel, 130vw));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shooting-star,
+  .sky__star {
+    animation: none;
+  }
+  .shooting-star {
+    opacity: 0.9;
+    left: 30%;
+  }
+}
