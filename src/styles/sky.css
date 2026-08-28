@@ -52,7 +52,11 @@
 }
 
 /* --- Shooting stars ------------------------------------------------------
-   One per unopened star from a friend. They travel behind the jar. */
+   One per unopened star from a friend. They travel behind the jar.
+
+   Every value here is a custom property that NightSky.jsx re-rolls at the end
+   of each pass, so no two crossings share a trajectory. --tail-dir flips the
+   tail to the other side for the streaks travelling right to left. */
 
 .shooting-layer {
   position: absolute;
@@ -63,15 +67,15 @@
 .shooting-star {
   position: absolute;
   top: var(--start-y, 12%);
-  left: -14%;
-  width: 3px;
-  height: 3px;
+  left: var(--from-x, -14%);
+  width: var(--dot, 3px);
+  height: var(--dot, 3px);
   border-radius: 50%;
   background: var(--gold);
   box-shadow: 0 0 10px 2px rgba(255, 212, 107, 0.9);
   transform: rotate(var(--angle, 18deg));
   transform-origin: center;
-  animation: shoot var(--shooting-star-duration) linear infinite;
+  animation: shoot var(--dur, var(--shooting-star-duration)) linear infinite;
   animation-delay: var(--delay, 0s);
   opacity: 0;
 }
@@ -84,7 +88,8 @@
   top: 50%;
   width: var(--tail, 170px);
   height: 2px;
-  transform: translateY(-50%);
+  transform-origin: 100% 50%;
+  transform: translateY(-50%) scaleX(var(--tail-dir, 1));
   background: linear-gradient(
     270deg,
     rgba(255, 212, 107, 0.95),

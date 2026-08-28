@@ -14,7 +14,14 @@ import JarGlass from './JarGlass.jsx';
 import { useJarPhysics } from '../hooks/useJarPhysics.js';
 
 const MasonJar = forwardRef(function MasonJar(
-  { stars, label, emptyMessage = 'Nothing in here yet', showHint = false, onPullOut },
+  {
+    stars,
+    label,
+    labelMeta,
+    emptyMessage = 'Nothing in here yet',
+    showHint = false,
+    onPullOut,
+  },
   ref
 ) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -53,40 +60,51 @@ const MasonJar = forwardRef(function MasonJar(
   };
 
   return (
-    <div className="jar" ref={attachRefs}>
-      <JarGlass width={size.width} height={size.height} layer="back" />
+    <div className="jar-wrap">
+      <div className="jar" ref={attachRefs}>
+        <JarGlass width={size.width} height={size.height} layer="back" />
 
-      <div className="jar__contents">
-        {stars.map((star) => (
-          <button
-            key={star.id}
-            type="button"
-            ref={registerStarEl(star.id)}
-            className={
-              'star' +
-              (draggingId === star.id ? ' star--dragging' : '') +
-              (showHint && stars.length ? ' star--hint' : '')
-            }
-            aria-label={
-              star.text
-                ? `Memory: ${star.text.slice(0, 60)}`
-                : 'A memory with photos'
-            }
-            {...starHandlers(star.id)}
-          >
-            <StarShape color={star.color} style={{ width: '100%', height: '100%' }} />
-          </button>
-        ))}
+        <div className="jar__contents">
+          {stars.map((star) => (
+            <button
+              key={star.id}
+              type="button"
+              ref={registerStarEl(star.id)}
+              className={
+                'star' +
+                (draggingId === star.id ? ' star--dragging' : '') +
+                (showHint && stars.length ? ' star--hint' : '')
+              }
+              aria-label={
+                star.text
+                  ? `Memory: ${star.text.slice(0, 60)}`
+                  : 'A memory with photos'
+              }
+              {...starHandlers(star.id)}
+            >
+              <StarShape
+                color={star.color}
+                style={{ width: '100%', height: '100%' }}
+              />
+            </button>
+          ))}
+        </div>
+
+        <JarGlass width={size.width} height={size.height} layer="front" />
+
+        {stars.length === 0 && <p className="jar__empty">{emptyMessage}</p>}
+
+        {showHint && stars.length > 0 && (
+          <span className="jar__hint">pull a star out ↑</span>
+        )}
       </div>
 
-      <JarGlass width={size.width} height={size.height} layer="front" />
-
-      {stars.length === 0 && <p className="jar__empty">{emptyMessage}</p>}
-
-      {label && <span className="jar__label">{label}</span>}
-
-      {showHint && stars.length > 0 && (
-        <span className="jar__hint">pull a star out ↑</span>
+      {/* Whose jar this is, on a paper tag under the glass. */}
+      {label && (
+        <div className="jar__tag">
+          <span className="jar__tag-name">{label}</span>
+          {labelMeta && <span className="jar__tag-meta">{labelMeta}</span>}
+        </div>
       )}
     </div>
   );

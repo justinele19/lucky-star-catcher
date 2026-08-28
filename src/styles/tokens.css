@@ -24,12 +24,19 @@
   --ink: #3a2c1c; /* handwriting + text on paper */
   --ink-soft: #8a7a63;
 
-  /* --- Colour: the glass ------------------------------------------------ */
+  /* --- Colour: the glass ------------------------------------------------
+     --glass-deep and --jar-void are the depth cues: the shadow inside the
+     far wall, and the dark you see looking down through the mouth. */
   --glass: rgba(226, 240, 255, 0.16);
   --glass-edge: rgba(226, 240, 255, 0.42);
   --glass-shine: rgba(255, 255, 255, 0.55);
-  --lid: #c8cdd6;
-  --lid-dark: #8e959f;
+  --glass-deep: #0a1330;
+  --jar-void: rgba(6, 11, 30, 0.72);
+
+  /* The screw band around the neck. */
+  --metal: #b9c0ca;
+  --metal-hi: #eef2f7;
+  --metal-dark: #7d848f;
 
   /* --- Colour: the stars -----------------------------------------------
      Add or remove entries freely, then update --star-palette-count and the
@@ -47,6 +54,7 @@
   --card-edge: rgba(58, 44, 28, 0.12);
   --accent: #ff6f9c; /* primary action */
   --accent-ink: #2a1220;
+  --danger: #b3402f; /* the one button that destroys something */
   --overlay-scrim: rgba(7, 14, 36, 0.62);
 
   /* --- Type ------------------------------------------------------------- */
@@ -83,25 +91,32 @@
 
   /* --- The jar ----------------------------------------------------------
      Jar size on screen. The physics walls are derived from these in
-     src/design/tokens.js (JAR_GEOMETRY). */
-  --jar-width: min(74vw, 350px);
-  --jar-aspect: 0.68; /* width / height */
+     src/design/tokens.js (JAR_GEOMETRY).
+
+     The vh term keeps a tall jar from outgrowing the screen on short
+     windows — without it the taller proportion overflows the stage. */
+  --jar-width: min(90vw, 440px, 43vh);
+  --jar-aspect: 0.58; /* width / height — lower is a longer jar */
 
   /* --- Stars in the jar -------------------------------------------------- */
   --star-size: 56px; /* rendered size of one folded star */
   --star-size-mobile: 46px;
 
   /* --- Motion -----------------------------------------------------------
-     The unfold is the signature moment; these four numbers control its feel. */
+     The unfold is the signature moment. One number per phase, mirrored by
+     UNFOLD_PHASES in src/design/tokens.js — change one, change the other.
+     They add up to just under two seconds end to end. */
   --t-quick: 180ms;
   --t-ease: 320ms;
-  --t-unfold-flatten: 420ms; /* puffy star presses down to a flat pentagon */
-  --t-unfold-unroll: 760ms; /* pentagon unwinds into the paper strip */
+  --t-unfold-unpuff: 340ms; /* the points press flat into a pentagon */
+  --t-unfold-untuck: 260ms; /* the tucked end flicks back out */
+  --t-unfold-unwind: 620ms; /* the pentagon spins the wraps off itself */
+  --t-unfold-unknot: 340ms; /* the first knot lets go */
   --t-unfold-settle: 300ms; /* text and photos arrive */
   --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  --shooting-star-duration: 2600ms; /* one streak across the sky */
+  --shooting-star-duration: 2600ms; /* fallback; NightSky varies each pass */
 }
 
 /* Respect people who'd rather things held still. */
@@ -109,8 +124,10 @@
   :root {
     --t-quick: 0ms;
     --t-ease: 0ms;
-    --t-unfold-flatten: 0ms;
-    --t-unfold-unroll: 0ms;
+    --t-unfold-unpuff: 0ms;
+    --t-unfold-untuck: 0ms;
+    --t-unfold-unwind: 0ms;
+    --t-unfold-unknot: 0ms;
     --t-unfold-settle: 0ms;
   }
 }

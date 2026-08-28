@@ -26,7 +26,11 @@ function readFile(file) {
   });
 }
 
-export default function ComposeSheet({ onSave, onCancel }) {
+/**
+ * `sendToName` switches the sheet from "fold this into my jar" to "fold this
+ * and send it" — same form, different destination, set by whoever opened it.
+ */
+export default function ComposeSheet({ onSave, onCancel, sendToName }) {
   const [text, setText] = useState('');
   const [occurredOn, setOccurredOn] = useState('');
   const [color, setColor] = useState(STAR_COLORS[0]);
@@ -60,10 +64,19 @@ export default function ComposeSheet({ onSave, onCancel }) {
 
   return (
     <div className="sheet-scrim" onPointerDown={(e) => e.target === e.currentTarget && onCancel()}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="Fold a memory">
-        <h2 className="sheet__title">Fold a memory</h2>
+      <div
+        className="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={sendToName ? `Send a star to ${sendToName}` : 'Fold a memory'}
+      >
+        <h2 className="sheet__title">
+          {sendToName ? `Send a star to ${sendToName}` : 'Fold a memory'}
+        </h2>
         <p className="sheet__hint">
-          It goes in the jar as a star. You'll find it again when you pull it out.
+          {sendToName
+            ? 'It arrives folded. They get to open it themselves.'
+            : "It goes in the jar as a star. You'll find it again when you pull it out."}
         </p>
 
         <label className="field">
@@ -161,7 +174,13 @@ export default function ComposeSheet({ onSave, onCancel }) {
             disabled={!canSave || saving}
             onClick={save}
           >
-            {saving ? 'Folding…' : 'Fold it'}
+            {saving
+              ? sendToName
+                ? 'Sending…'
+                : 'Folding…'
+              : sendToName
+              ? 'Fold & send'
+              : 'Fold it'}
           </button>
         </div>
       </div>

@@ -3,11 +3,63 @@
  *
  * `shootingCount` is the number of unopened stars sitting in the inbox — one
  * streak per waiting star, so a busy inbox literally makes the sky busier.
+ *
+ * Each streak rolls a fresh trajectory every time it crosses: a new height,
+ * angle, speed, length and direction. A CSS animation on its own would replay
+ * the identical arc forever, so the re-roll happens on `animationiteration`,
+ * at the moment the streak has faded out and is about to come round again.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 const PINPRICK_COUNT = 140; // raise for a denser sky, lower for a calmer one
+
+const rand = (min, max) => min + Math.random() * (max - min);
+
+/** One crossing: where it enters, how steeply it falls, how fast, how long. */
+function rollTrajectory() {
+  // Most fall left to right, some the other way, so the sky doesn't read as
+  // a single repeating conveyor belt.
+  const flip = Math.random() < 0.32;
+  const angle = rand(7, 48) * (flip ? -1 : 1);
+  const travel = rand(118, 152) * (flip ? -1 : 1);
+
+  return {
+    startY: rand(-4, 58),
+    fromX: flip ? 108 : -14,
+    angle,
+    travel,
+    tail: rand(90, 250),
+    duration: rand(1700, 3400),
+    dot: rand(2.2, 3.6),
+    tailDir: flip ? -1 : 1,
+  };
+}
+
+function ShootingStar({ index }) {
+  const [t, setT] = useState(rollTrajectory);
+  // The opening stagger is fixed per streak; re-rolling it mid-flight would
+  // restart the animation instead of letting it loop.
+  const delay = useRef(index * 1.9 + Math.random() * 1.4).current;
+
+  return (
+    <span
+      className="shooting-star"
+      onAnimationIteration={() => setT(rollTrajectory())}
+      style={{
+        '--start-y': `${t.startY}%`,
+        '--from-x': `${t.fromX}%`,
+        '--angle': `${t.angle}deg`,
+        '--travel': `${t.travel}vw`,
+        '--tail': `${t.tail}px`,
+        '--dur': `${t.duration}ms`,
+        '--dot': `${t.dot}px`,
+        '--tail-dir': t.tailDir,
+        '--delay': `${delay}s`,
+      }}
+    />
+  );
+}
 
 export default function NightSky({ shootingCount = 0 }) {
   // Positions are generated once and kept, so the sky doesn't reshuffle on
@@ -25,19 +77,6 @@ export default function NightSky({ shootingCount = 0 }) {
         max: 0.6 + Math.random() * 0.4,
       })),
     []
-  );
-
-  const streaks = useMemo(
-    () =>
-      Array.from({ length: shootingCount }, (_, i) => ({
-        id: i,
-        startY: 6 + Math.random() * 46, // upper half of the sky
-        angle: 12 + Math.random() * 16,
-        delay: i * 1.9 + Math.random() * 1.4,
-        tail: 130 + Math.random() * 110,
-        travel: 125 + Math.random() * 25,
-      })),
-    [shootingCount]
   );
 
   return (
@@ -64,18 +103,8 @@ export default function NightSky({ shootingCount = 0 }) {
       </div>
 
       <div className="shooting-layer">
-        {streaks.map((s) => (
-          <span
-            key={s.id}
-            className="shooting-star"
-            style={{
-              '--start-y': `${s.startY}%`,
-              '--angle': `${s.angle}deg`,
-              '--delay': `${s.delay}s`,
-              '--tail': `${s.tail}px`,
-              '--travel': `${s.travel}vw`,
-            }}
-          />
+        {Array.from({ length: shootingCount }, (_, i) => (
+          <ShootingStar key={i} index={i} />
         ))}
       </div>
     </div>

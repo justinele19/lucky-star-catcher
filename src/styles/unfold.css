@@ -2,13 +2,18 @@
    THE UNFOLD
    The one moment this app is remembered by, so it gets its own file.
 
-   Four phases, driven by data-phase on .unfold:
+   Six phases, driven by data-phase on .unfold. They run the real folding
+   sequence backwards — knot, wrap, wrap, wrap, tuck, pinch — so:
      star     the folded star, floating, just released from the jar
-     flatten  the five points press down into a flat pentagon
-     unroll   the pentagon unwinds to the right, paying out the paper strip
+     unpuff   the five points press flat again and it becomes a pentagon
+     untuck   the tucked-in end flicks back out from under the edge
+     unwind   the pentagon spins, shedding wraps, paying out paper as it turns
+     unknot   the first knot loosens and lets go of the strip
      open     the memory is readable; photos rise above it
 
-   Closing runs the same phases backwards.
+   Each phase sets --phase-ms, so one transition declaration can run at the
+   right speed for whichever step is playing. Closing runs the same phases
+   backwards, faster — see UNFOLD_PHASES in design/tokens.js.
    ========================================================================== */
 
 .unfold-scrim {
@@ -36,6 +41,23 @@
   gap: var(--sp-5);
   width: 100%;
   max-width: 760px;
+
+  --phase-ms: var(--t-unfold-unpuff);
+}
+
+.unfold[data-phase='star'],
+.unfold[data-phase='unpuff'] {
+  --phase-ms: var(--t-unfold-unpuff);
+}
+.unfold[data-phase='untuck'] {
+  --phase-ms: var(--t-unfold-untuck);
+}
+.unfold[data-phase='unwind'] {
+  --phase-ms: var(--t-unfold-unwind);
+}
+.unfold[data-phase='unknot'],
+.unfold[data-phase='open'] {
+  --phase-ms: var(--t-unfold-unknot);
 }
 
 /* X, pinned to the top-right of the screen. */
@@ -66,6 +88,7 @@
   justify-content: center;
   opacity: 0;
   transform: translateY(14px);
+  pointer-events: none;
   transition: opacity var(--t-unfold-settle) var(--ease-paper),
     transform var(--t-unfold-settle) var(--ease-paper);
 }
@@ -73,9 +96,27 @@
 .unfold[data-phase='open'] .unfold__media {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Each photo is a button — tapping it zooms rather than closing the memory. */
+.unfold__photo-btn {
+  position: relative;
+  display: block;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  transform: rotate(var(--tilt, -2deg));
+  transition: transform var(--t-quick) var(--ease-snap),
+    box-shadow var(--t-quick) ease;
+}
+
+.unfold__photo-btn:hover,
+.unfold__photo-btn:focus-visible {
+  transform: rotate(var(--tilt, -2deg)) scale(1.04);
 }
 
 .unfold__photo {
+  display: block;
   width: clamp(110px, 26vw, 190px);
   aspect-ratio: 3 / 4;
   object-fit: cover;
@@ -84,10 +125,21 @@
   /* Polaroid-ish border, tilted a touch so they feel handled. */
   border: 6px solid var(--paper);
   box-shadow: var(--shadow-lift);
-  transform: rotate(var(--tilt, -2deg));
+  pointer-events: none;
 }
 
-/* --- The paper strip ------------------------------------------------------ */
+.unfold__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+/* --- The star coming apart ------------------------------------------------ */
 
 .unfold__paper-wrap {
   position: relative;
@@ -97,17 +149,31 @@
   min-height: 140px;
 }
 
-/* The folded star itself, shown before and during flattening. */
 .unfold__star {
   position: absolute;
   width: clamp(74px, 18vw, 104px);
   height: clamp(74px, 18vw, 104px);
+  overflow: visible;
   transform-origin: center;
-  transition: transform var(--t-unfold-flatten) var(--ease-paper),
-    opacity var(--t-unfold-flatten) ease;
+  transition: transform var(--phase-ms) var(--ease-paper),
+    opacity var(--phase-ms) ease, filter var(--phase-ms) ease;
   filter: drop-shadow(0 8px 16px rgba(7, 14, 36, 0.55));
 }
 
+/* Facets are individual paths inside StarShape, each carrying the direction
+   it faces as --facet-dir, which is what lets them peel outward one by one. */
+.unfold__star .star__facet {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transition: transform var(--phase-ms) var(--ease-paper),
+    opacity var(--phase-ms) ease;
+}
+
+.unfold__star .star__creases {
+  transition: opacity var(--phase-ms) ease;
+}
+
+/* star — floating, still fully folded. */
 .unfold[data-phase='star'] .unfold__star {
   transform: scale(1) rotate(0deg);
   opacity: 1;
@@ -124,20 +190,94 @@
   }
 }
 
-/* The points press down: squashed, un-puffed, rotated to a pentagon rest. */
-.unfold[data-phase='flatten'] .unfold__star {
-  transform: scale(0.92, 0.62) rotate(-18deg);
-  opacity: 1;
+/* unpuff — the five points press flat. The star squashes and its facets slide
+   back toward the middle as the paper loses its shape, crossfading into the
+   pentagon underneath. */
+.unfold[data-phase='unpuff'] .unfold__star {
+  transform: scale(1.08, 0.72) rotate(-7deg);
+  opacity: 0;
+  filter: drop-shadow(0 3px 7px rgba(7, 14, 36, 0.4)) saturate(0.92);
 }
 
-.unfold[data-phase='unroll'] .unfold__star,
+.unfold[data-phase='unpuff'] .star__facet {
+  transform: rotate(var(--facet-dir)) translateY(4px) scaleY(0.82)
+    rotate(calc(-1 * var(--facet-dir)));
+}
+
+/* Everything after that, the star is gone — the pentagon has taken over. */
+.unfold[data-phase='untuck'] .unfold__star,
+.unfold[data-phase='unwind'] .unfold__star,
+.unfold[data-phase='unknot'] .unfold__star,
 .unfold[data-phase='open'] .unfold__star {
-  transform: scale(0.34, 0.2) rotate(-42deg);
+  transform: scale(0.9, 0.4);
   opacity: 0;
 }
 
-/* The strip. It grows from the star's footprint out to full width, paying
-   out from the left, the way the paper actually leaves the knot. */
+/* --- The pentagon, and the wraps coming off it ---------------------------- */
+
+.unfold__pentagon {
+  position: absolute;
+  width: clamp(74px, 18vw, 104px);
+  height: clamp(74px, 18vw, 104px);
+  overflow: visible;
+  opacity: 0;
+  transform: rotate(0deg) scale(0.92);
+  transform-origin: center;
+  filter: drop-shadow(0 6px 12px rgba(7, 14, 36, 0.5));
+  transition: transform var(--phase-ms) var(--ease-paper),
+    opacity var(--phase-ms) ease;
+}
+
+.pentagon__tail {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  opacity: 0;
+  transition: transform var(--phase-ms) var(--ease-paper),
+    opacity var(--phase-ms) ease;
+}
+
+/* unpuff — it arrives flat, as the star fades off the top of it. */
+.unfold[data-phase='unpuff'] .unfold__pentagon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* untuck — the end that was tucked under swings back out. */
+.unfold[data-phase='untuck'] .unfold__pentagon {
+  opacity: 1;
+  transform: rotate(-16deg) scale(1);
+}
+
+.unfold[data-phase='untuck'] .pentagon__tail {
+  opacity: 1;
+  transform: rotate(-38deg) translate(-9px, 7px);
+}
+
+/* unwind — the turn that pays the paper out. It spins, shrinking as each wrap
+   leaves it, drifting toward the left-hand end of the strip below. */
+.unfold[data-phase='unwind'] .unfold__pentagon {
+  opacity: 1;
+  transform: rotate(calc(var(--unwind-turns) * -360deg)) scale(0.66)
+    translateX(-16px);
+}
+
+.unfold[data-phase='unwind'] .pentagon__tail {
+  opacity: 0;
+  transform: rotate(-90deg) translate(-16px, 10px);
+}
+
+/* unknot — the last loop lets go and the pentagon is gone. */
+.unfold[data-phase='unknot'] .unfold__pentagon,
+.unfold[data-phase='open'] .unfold__pentagon {
+  opacity: 0;
+  transform: rotate(calc(var(--unwind-turns) * -360deg - 70deg)) scale(0.22)
+    translateX(-40px);
+}
+
+/* --- The paper strip ------------------------------------------------------ */
+
+/* It grows from the star's footprint out to full width, paying out the way
+   the paper actually leaves the knot. */
 .unfold__strip {
   position: relative;
   width: 8%;
@@ -154,11 +294,27 @@
   opacity: 0;
   overflow: hidden;
   transform: rotate(-1.2deg);
-  transition: width var(--t-unfold-unroll) var(--ease-paper),
+  transition: width var(--phase-ms) var(--ease-paper),
     opacity var(--t-quick) ease;
 }
 
-.unfold[data-phase='unroll'] .unfold__strip,
+/* The freed end shows itself as the tuck comes undone. */
+.unfold[data-phase='untuck'] .unfold__strip {
+  width: 22%;
+  opacity: 0.6;
+}
+
+/* Most of the paper arrives here, paid out by the spinning pentagon. */
+.unfold[data-phase='unwind'] .unfold__strip {
+  width: 68%;
+  opacity: 1;
+}
+
+.unfold[data-phase='unknot'] .unfold__strip {
+  width: 88%;
+  opacity: 1;
+}
+
 .unfold[data-phase='open'] .unfold__strip {
   width: 100%;
   opacity: 1;
@@ -177,7 +333,7 @@
     transparent 47px 94px
   );
   opacity: 0.9;
-  transition: opacity var(--t-unfold-unroll) ease;
+  transition: opacity var(--t-unfold-unwind) ease;
 }
 
 .unfold[data-phase='open'] .unfold__creases {
@@ -209,7 +365,7 @@
   white-space: pre-wrap;
   opacity: 0;
   transition: opacity var(--t-unfold-settle) ease
-    calc(var(--t-unfold-unroll) * 0.5);
+    calc(var(--t-unfold-unwind) * 0.5);
 }
 
 .unfold__date {
@@ -223,7 +379,7 @@
   text-align: right;
   opacity: 0;
   transition: opacity var(--t-unfold-settle) ease
-    calc(var(--t-unfold-unroll) * 0.6);
+    calc(var(--t-unfold-unwind) * 0.6);
 }
 
 /* When there's no text, the date takes the middle of the paper instead. */
@@ -248,18 +404,112 @@
   gap: var(--sp-3);
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--t-unfold-settle) ease;
 }
 
 .unfold[data-phase='open'] .unfold__actions {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .unfold__from {
   font-family: var(--font-display);
   font-size: var(--size-small);
   color: var(--sky-star-dim);
+}
+
+/* --- Zoomed photo / video ------------------------------------------------- */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 34;
+  display: grid;
+  place-items: center;
+  padding: clamp(var(--sp-4), 5vw, var(--sp-7));
+  background: rgba(4, 8, 20, 0.9);
+  backdrop-filter: blur(10px);
+  animation: lightbox-in var(--t-ease) var(--ease-paper);
+}
+
+@keyframes lightbox-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.lightbox__frame {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  animation: lightbox-zoom var(--t-ease) var(--ease-paper);
+}
+
+@keyframes lightbox-zoom {
+  from {
+    transform: scale(0.86);
+    opacity: 0;
+  }
+}
+
+.lightbox__media {
+  display: block;
+  max-width: min(96vw, 1100px);
+  max-height: 80vh;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lift);
+  background: #000;
+}
+
+.lightbox__count {
+  font-family: var(--font-display);
+  font-size: var(--size-small);
+  color: var(--sky-star-dim);
+}
+
+.lightbox__close {
+  position: fixed;
+  top: calc(var(--sp-4) + env(safe-area-inset-top));
+  right: var(--sp-4);
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  color: var(--paper);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.lightbox__nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  color: var(--paper);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.lightbox__nav--prev {
+  left: var(--sp-3);
+}
+
+.lightbox__nav--next {
+  right: var(--sp-3);
 }
 
 @media (max-width: 480px) {

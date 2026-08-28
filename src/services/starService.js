@@ -16,8 +16,9 @@
  *   stars(id uuid pk, jar_id text, text text, occurred_on date,
  *         created_at timestamptz, color text, author_id uuid,
  *         opened bool, copied_from uuid)
- *   friends(id uuid pk, name text, kind text, color text)
+ *   friends(id uuid pk, name text, kind text, color text, members text[])
  *   star_recipients(star_id uuid, recipient_id uuid)   -- for groups
+ *   profiles(id uuid pk, name text)                    -- the account
  *
  * Media files go to Supabase Storage; keep the same { id, type, url } shape
  * and store the public URL. Then write createSupabaseStarService() below with
@@ -57,15 +58,21 @@ function saveToDisk(db) {
   }
 }
 
+const seed = () => ({
+  stars: structuredClone(MOCK_STARS),
+  friends: structuredClone(MOCK_FRIENDS),
+  user: structuredClone(MOCK_USER),
+});
+
 export function createLocalStarService() {
-  let db = loadFromDisk() || {
-    stars: structuredClone(MOCK_STARS),
-    friends: structuredClone(MOCK_FRIENDS),
-  };
+  let db = loadFromDisk() || seed();
+  // Data saved before accounts existed has no user on it.
+  if (!db.user) db.user = structuredClone(MOCK_USER);
 
   const snapshot = () => ({
     stars: structuredClone(db.stars),
     friends: structuredClone(db.friends),
+    user: structuredClone(db.user),
   });
 
   const commit = async () => {
@@ -76,26 +83,76 @@ export function createLocalStarService() {
 
   const find = (id) => db.stars.find((s) => s.id === id);
 
+  /** A fresh star, folded by you, ready to go in a jar. */
+  const foldStar = ({ text = '', occurredOn = '', media = [], color }, jarId) => ({
+    id: uid(),
+    jarId,
+    text: text.trim(),
+    occurredOn,
+    createdAt: new Date().toISOString(),
+    media,
+    color,
+    authorId: db.user.id,
+    opened: true,
+  });
+
   return {
-    currentUser: MOCK_USER,
+    /* A getter, not a copy: the name is editable on the account page and
+       everything reading this should see the current one. */
+    get currentUser() {
+      return db.user;
+    },
 
     async load() {
       await tick(140);
       return snapshot();
     },
 
+    /** Rename the account. */
+    async updateUser(patch) {
+      db.user = { ...db.user, ...patch };
+      return commit();
+    },
+
     /** Fold a new memory into a star and drop it in the main jar. */
-    async addStar({ text = '', occurredOn = '', media = [], color }) {
-      db.stars.push({
-        id: uid(),
-        jarId: 'main',
-        text: text.trim(),
-        occurredOn,
-        createdAt: new Date().toISOString(),
-        media,
+    async addStar(draft) {
+      db.stars.push(foldStar(draft, 'main'));
+      return commit();
+    },
+
+    /**
+     * Fold a memory and send it straight on, without it stopping in your jar
+     * first — what the button on a friend's page does.
+     */
+    async foldAndSend(draft, recipientIds) {
+      for (const recipientId of recipientIds) {
+        db.stars.push(foldStar(draft, `friend:${recipientId}`));
+      }
+      return commit();
+    },
+
+    /** A new friend, with their own empty jar. */
+    async addFriend({ name, color }) {
+      db.friends.push({
+        id: uid('f'),
+        name: name.trim(),
+        kind: 'friend',
         color,
-        authorId: MOCK_USER.id,
-        opened: true,
+      });
+      return commit();
+    },
+
+    /** A group jar, shared with several friends at once. */
+    async addGroup({ name, color, memberIds = [] }) {
+      const members = memberIds
+        .map((id) => db.friends.find((f) => f.id === id)?.name)
+        .filter(Boolean);
+      db.friends.push({
+        id: uid('g'),
+        name: name.trim(),
+        kind: 'group',
+        color,
+        members,
       });
       return commit();
     },
@@ -128,7 +185,7 @@ export function createLocalStarService() {
           ...structuredClone(original),
           id: uid(),
           jarId: `friend:${recipientId}`,
-          authorId: MOCK_USER.id,
+          authorId: db.user.id,
           opened: true,
           sentAt: new Date().toISOString(),
           copiedFrom: original.id,
@@ -183,10 +240,7 @@ export function createLocalStarService() {
 
     /** Wipe local data and go back to the seed set. */
     async reset() {
-      db = {
-        stars: structuredClone(MOCK_STARS),
-        friends: structuredClone(MOCK_FRIENDS),
-      };
+      db = seed();
       return commit();
     },
   };

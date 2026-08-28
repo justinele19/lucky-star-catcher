@@ -7,6 +7,7 @@
  *   home    your own memories
  *   inbox   stars from friends you haven't opened yet
  *   friend  everything you and one friend (or group) have traded
+ *   account you
  *
  * A star that's currently open is filtered out of the jar, which is how it
  * "leaves" — and putting it back in the list is how it returns.
@@ -16,10 +17,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import NightSky from './components/NightSky.jsx';
 import TopBar from './components/TopBar.jsx';
 import MasonJar from './components/MasonJar.jsx';
+import StarDefs from './components/StarDefs.jsx';
 import UnfoldOverlay from './components/UnfoldOverlay.jsx';
 import ComposeSheet from './components/ComposeSheet.jsx';
 import SendSheet from './components/SendSheet.jsx';
 import FriendsSheet from './components/FriendsSheet.jsx';
+import AccountPage from './components/AccountPage.jsx';
 import { starService } from './services/starService.js';
 import { useSessionQueue } from './hooks/useSessionQueue.js';
 
@@ -29,11 +32,11 @@ import './styles/jar.css';
 import './styles/unfold.css';
 
 export default function App() {
-  const [data, setData] = useState({ stars: [], friends: [] });
+  const [data, setData] = useState({ stars: [], friends: [], user: null });
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState({ name: 'home' });
   const [openStarId, setOpenStarId] = useState(null);
-  const [sheet, setSheet] = useState(null); // 'compose' | 'friends' | {name:'send', starId}
+  const [sheet, setSheet] = useState(null); // 'compose' | 'friends' | {name, …}
   const [toast, setToast] = useState('');
   const [pulledOnce, setPulledOnce] = useState(false);
 
@@ -68,7 +71,9 @@ export default function App() {
       ? 'main'
       : view.name === 'inbox'
       ? 'inbox'
-      : `friend:${view.id}`;
+      : view.name === 'friend'
+      ? `friend:${view.id}`
+      : null;
 
   const jarStars = useMemo(
     () => data.stars.filter((s) => s.jarId === currentJarId),
@@ -168,12 +173,48 @@ export default function App() {
     showToast('Folded and dropped in');
   };
 
+  /** Fold a memory straight into a friend's jar, from their own page. */
+  const foldAndSend = async (draft) => {
+    const friendId = sheet.friendId;
+    const snapshot = await starService.foldAndSend(draft, [friendId]);
+    setData(snapshot);
+    setSheet(null);
+    resetQueue();
+    showToast(`Sent to ${friendsById[friendId]?.name || 'your friend'}`);
+  };
+
   const sendStar = async (recipientIds) => {
     const snapshot = await starService.sendStar(sheet.starId, recipientIds);
     setData(snapshot);
     setSheet(null);
     const names = recipientIds.map((id) => friendsById[id]?.name).filter(Boolean);
     showToast(`Sent to ${names.join(' and ')}`);
+  };
+
+  const addFriend = async (draft) => {
+    const snapshot = await starService.addFriend(draft);
+    setData(snapshot);
+    showToast(`${draft.name.trim()} has a jar now`);
+  };
+
+  const addGroup = async (draft) => {
+    const snapshot = await starService.addGroup(draft);
+    setData(snapshot);
+    showToast(`${draft.name.trim()} is ready`);
+  };
+
+  const renameUser = async (name) => {
+    const snapshot = await starService.updateUser({ name });
+    setData(snapshot);
+    showToast('Name updated');
+  };
+
+  const resetEverything = async () => {
+    const snapshot = await starService.reset();
+    setData(snapshot);
+    setView({ name: 'home' });
+    resetQueue();
+    showToast('Back to the beginning');
   };
 
   const simulateIncoming = async () => {
@@ -190,21 +231,25 @@ export default function App() {
 
   const viewFriend = view.name === 'friend' ? friendsById[view.id] : null;
 
+  // On a friend's page their name sits under the jar, so the bar stays empty
+  // above it rather than saying it twice.
   const title =
     view.name === 'home'
       ? 'Your jar'
       : view.name === 'inbox'
       ? 'Waiting for you'
-      : viewFriend?.name || 'Jar';
+      : view.name === 'account'
+      ? 'Your account'
+      : undefined;
 
   const subtitle =
     view.name === 'home'
       ? `${starsIn('main').length} memories folded up`
       : view.name === 'inbox'
       ? `${inboxCount} unopened`
-      : viewFriend?.kind === 'group'
-      ? viewFriend.members?.join(', ')
-      : 'Stars you two have traded';
+      : view.name === 'friend'
+      ? `${jarStars.length} star${jarStars.length === 1 ? '' : 's'}`
+      : undefined;
 
   const emptyMessage =
     view.name === 'inbox'
@@ -212,6 +257,19 @@ export default function App() {
       : view.name === 'friend'
       ? 'Send the first star.'
       : 'Fold your first memory below.';
+
+  const accountStats = useMemo(() => {
+    const me = data.user?.id;
+    return {
+      folded: data.stars.filter((s) => s.jarId === 'main' && s.authorId === me)
+        .length,
+      sent: data.stars.filter(
+        (s) => s.jarId?.startsWith('friend:') && s.authorId === me
+      ).length,
+      received: data.stars.filter((s) => s.authorId && s.authorId !== me).length,
+      waiting: inboxCount,
+    };
+  }, [data.stars, data.user, inboxCount]);
 
   if (loading) {
     return (
@@ -221,8 +279,11 @@ export default function App() {
     );
   }
 
+  const showsJar = view.name !== 'account';
+
   return (
     <div className="app">
+      <StarDefs />
       <NightSky shootingCount={view.name === 'home' ? inboxCount : 0} />
 
       <div className={'app__stage' + (openStar ? ' app__stage--behind' : '')}>
@@ -230,21 +291,38 @@ export default function App() {
           title={title}
           subtitle={subtitle}
           inboxCount={inboxCount}
+          user={data.user}
           onInboxClick={() => setView({ name: 'inbox' })}
+          onAccountClick={() => setView({ name: 'account' })}
           onBack={view.name === 'home' ? undefined : () => setView({ name: 'home' })}
         />
 
-        <div className="jar-stage">
-          <MasonJar
-            ref={jarRef}
-            key={currentJarId} /* a new jar means a fresh physics world */
-            stars={starsInJar}
-            label={view.name === 'friend' ? viewFriend?.name : undefined}
-            emptyMessage={emptyMessage}
-            showHint={view.name === 'home' && !pulledOnce}
-            onPullOut={handlePullOut}
+        {showsJar ? (
+          <div className="jar-stage">
+            <MasonJar
+              ref={jarRef}
+              key={currentJarId} /* a new jar means a fresh physics world */
+              stars={starsInJar}
+              label={view.name === 'friend' ? viewFriend?.name : undefined}
+              labelMeta={
+                view.name === 'friend' && viewFriend?.kind === 'group'
+                  ? viewFriend.members?.join(' · ')
+                  : undefined
+              }
+              emptyMessage={emptyMessage}
+              showHint={view.name === 'home' && !pulledOnce}
+              onPullOut={handlePullOut}
+            />
+          </div>
+        ) : (
+          <AccountPage
+            user={data.user}
+            stats={accountStats}
+            friends={data.friends}
+            onRename={renameUser}
+            onReset={resetEverything}
           />
-        </div>
+        )}
 
         <div className="dock">
           {view.name === 'home' && (
@@ -275,13 +353,31 @@ export default function App() {
           )}
 
           {view.name === 'inbox' && inboxCount > 0 && (
-            <button
-              type="button"
-              className="btn btn--gold"
-              onClick={handleSurpriseMe}
-            >
+            <button type="button" className="btn btn--gold" onClick={handleSurpriseMe}>
               Open one
             </button>
+          )}
+
+          {view.name === 'friend' && viewFriend && (
+            <>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() =>
+                  setSheet({ name: 'compose-send', friendId: viewFriend.id })
+                }
+              >
+                Send a star to {viewFriend.name}
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={handleSurpriseMe}
+                disabled={starsInJar.length === 0}
+              >
+                Surprise me
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -303,6 +399,14 @@ export default function App() {
         <ComposeSheet onSave={saveNewStar} onCancel={() => setSheet(null)} />
       )}
 
+      {sheet?.name === 'compose-send' && (
+        <ComposeSheet
+          sendToName={friendsById[sheet.friendId]?.name}
+          onSave={foldAndSend}
+          onCancel={() => setSheet(null)}
+        />
+      )}
+
       {sheet === 'friends' && (
         <FriendsSheet
           friends={data.friends}
@@ -311,6 +415,8 @@ export default function App() {
             setSheet(null);
             setView({ name: 'friend', id });
           }}
+          onAddFriend={addFriend}
+          onAddGroup={addGroup}
           onSimulateIncoming={simulateIncoming}
           onCancel={() => setSheet(null)}
         />

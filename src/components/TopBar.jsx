@@ -37,6 +37,8 @@ export default function TopBar({
   subtitle,
   inboxCount = 0,
   onInboxClick,
+  onAccountClick,
+  user,
   onBack,
 }) {
   return (
@@ -54,25 +56,42 @@ export default function TopBar({
 
       {onBack && (
         <div style={{ textAlign: 'right' }}>
-          <h1 className="topbar__title">{title}</h1>
+          {title && <h1 className="topbar__title">{title}</h1>}
           {subtitle && <p className="topbar__sub">{subtitle}</p>}
         </div>
       )}
 
       {!onBack && (
-        <button
-          type="button"
-          className={'inbox-btn' + (inboxCount > 0 ? ' inbox-btn--lit' : '')}
-          onClick={onInboxClick}
-          aria-label={
-            inboxCount > 0
-              ? `${inboxCount} star${inboxCount === 1 ? '' : 's'} waiting`
-              : 'No stars waiting'
-          }
-        >
-          <ShootingStarIcon />
-          {inboxCount > 0 && <span className="inbox-btn__count">{inboxCount}</span>}
-        </button>
+        <div className="topbar__actions">
+          <button
+            type="button"
+            className={'inbox-btn' + (inboxCount > 0 ? ' inbox-btn--lit' : '')}
+            onClick={onInboxClick}
+            aria-label={
+              inboxCount > 0
+                ? `${inboxCount} star${inboxCount === 1 ? '' : 's'} waiting`
+                : 'No stars waiting'
+            }
+          >
+            <ShootingStarIcon />
+            {inboxCount > 0 && (
+              <span className="inbox-btn__count">{inboxCount}</span>
+            )}
+          </button>
+
+          {onAccountClick && (
+            <button
+              type="button"
+              className="account-btn"
+              onClick={onAccountClick}
+              aria-label="Your account"
+            >
+              <span className="avatar" aria-hidden="true">
+                {(user?.name || '?')[0]}
+              </span>
+            </button>
+          )}
+        </div>
       )}
     </header>
   );
